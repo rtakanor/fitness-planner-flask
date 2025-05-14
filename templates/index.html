@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Fitness Planner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to right, #ece9e6, #ffffff);
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 60px auto;
+      background: #fff;
+      padding: 40px 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .top-bar img {
+      width: 60px;
+    }
+
+    .top-bar h1 {
+      margin: 10px 0 0;
+      color: #1f1f1f;
+      font-size: 24px;
+    }
+
+    .top-bar p {
+      margin: 0;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .login-btn, .logout-btn {
+      background-color: #ff9800;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s ease-in-out;
+      text-decoration: none;
+    }
+
+    .login-btn:hover, .logout-btn:hover {
+      background-color: #e68900;
+      transform: scale(1.05);
+    }
+
+    label {
+      font-weight: 600;
+      display: block;
+      margin: 16px 0 6px;
+      color: #333;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #4CAF50;
+      box-shadow: 0 0 5px rgba(76, 175, 80, 0.4);
+    }
+
+    button {
+      margin-top: 15px;
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s ease, transform 0.2s ease-in-out;
+    }
+
+    button:hover {
+      background: #3e8e41;
+      transform: scale(1.03);
+    }
+
+    #resultados {
+      margin-top: 40px;
+      background: #f6f8fa;
+      border-left: 5px solid #4CAF50;
+      padding: 20px;
+      border-radius: 10px;
+      color: #222;
+    }
+
+    ul {
+      padding-left: 20px;
+      margin-top: 10px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        margin: 20px;
+        padding: 20px;
+      }
+
+      .top-bar {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <div>
+        <img src="https://img.icons8.com/ios-filled/100/4CAF50/dumbbell.png" alt="Logo">
+        <h1>Fitness Planner</h1>
+        <p>Calcula tus calorías y obtén una rutina personalizada</p>
+      </div>
+      <div>
+        {% if username %}
+          <a href="/logout" class="logout-btn">Cerrar sesión ({{ username }})</a>
+        {% else %}
+          <a href="/login" class="login-btn">Login</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <form id="fitnessForm">
+      <label>Edad</label>
+      <input type="number" name="edad" required min="10" max="100">
+
+      <label>Peso (kg)</label>
+      <input type="number" name="peso" required min="30" max="250">
+
+      <label>Altura (cm)</label>
+      <input type="number" name="altura" required min="100" max="250">
+
+      <label>Género</label>
+      <select name="genero">
+        <option value="hombre">Hombre</option>
+        <option value="mujer">Mujer</option>
+      </select>
+
+      <label>Nivel de actividad</label>
+      <select name="actividad">
+        <option value="1">Sedentario</option>
+        <option value="2">Ligero</option>
+        <option value="3">Moderado</option>
+        <option value="4">Activo</option>
+        <option value="5">Muy activo</option>
+      </select>
+
+      <label>Objetivo</label>
+      <select name="objetivo">
+        <option value="volumen">Volumen</option>
+        <option value="definicion">Definición</option>
+      </select>
+
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <button type="submit">Calcular TMR + Rutina</button>
+        <button type="button" id="bmrBtn" style="background:#007BFF;">Calcular solo BMR</button>
+      </div>
+    </form>
+
+    <div id="resultados"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('fitnessForm');
+    const resultados = document.getElementById('resultados');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form));
+      const edad = Number(data.edad);
+      const peso = Number(data.peso);
+      const altura = Number(data.altura);
+
+      if (edad < 10 || edad > 100 || peso < 30 || peso > 250 || altura < 100 || altura > 250) {
+        resultados.innerHTML = `<h2 style="color:red;">Por favor ingresa valores válidos:<br>
+        Edad: 10–100 años<br>Peso: 30–250 kg<br>Altura: 100–250 cm</h2>`;
+        return;
+      }
+
+      const response = await fetch('/api/tmr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          edad, peso, altura,
+          genero: data.genero,
+          actividad: Number(data.actividad),
+          objetivo: data.objetivo
+        })
+      });
+
+      const resultado = await response.json();
+      if (!resultado.tmr) {
+        resultados.innerHTML = `<h2 style="color:red;">Ocurrió un error al calcular TMR. Asegúrate de haber iniciado sesión.</h2>`;
+        return;
+      }
+
+      resultados.innerHTML = `<h2>Resultados</h2>
+        <strong>TMR estimado:</strong> ${resultado.tmr.toFixed(2)} kcal<br><br>
+        <strong>Rutina semanal:</strong><ul>`;
+
+      resultado.rutina.forEach(item => {
+        resultados.innerHTML += `<li><strong>${item.dia}:</strong> ${item.actividad}</li>`;
+      });
+
+      resultados.innerHTML += `</ul>`;
+    });
+
+    document.getElementById('bmrBtn').addEventListener('click', async () => {
+      const data = Object.fromEntries(new FormData(form));
+      const edad = Number(data.edad);
+      const peso = Number(data.peso);
+      const altura = Number(data.altura);
+
+      if (!edad || !peso || !altura || !data.genero) {
+        resultados.innerHTML = `<h2 style="color:red;">Por favor completa todos los campos antes de calcular el BMR.</h2>`;
+        return;
+      }
+
+      const response = await fetch('/api/bmr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ edad, peso, altura, genero: data.genero })
+      });
+
+      const resultado = await response.json();
+      resultados.innerHTML = `<h2>Resultados</h2><strong>BMR estimado:</strong> ${resultado.bmr.toFixed(2)} kcal/día (en reposo).`;
+    });
+  </script>
+</body>
+</html>
